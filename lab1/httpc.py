@@ -3,7 +3,9 @@ import argparse
 import sys
 
 
-def run_client(host, port):
+def run_client(args):
+    print args
+    return None
     conn = socket(AF_INET, SOCK_STREAM)
     try:
         conn.connect((host, port))
@@ -14,9 +16,18 @@ def run_client(host, port):
         conn.close()
 
 
-# Usage: python echoclient.py --host host --port port
-parser = argparse.ArgumentParser()
-parser.add_argument("--host", help="server host", default="httpbin.org")
-parser.add_argument("--port", help="server port", type=int, default=80)
+parser = argparse.ArgumentParser(add_help=False)
+subparsers = parser.add_subparsers(help='commands')
+get_parser = subparsers.add_parser('GET', help='get help')
+get_parser.add_argument("-v", action='store_true', dest="verbose", default=False, help="")
+get_parser.add_argument("-h", action="store", dest="headers", default=[], help="server port")
+
+post_parser = subparsers.add_parser('POST', help='get help')
+post_parser.add_argument("-v", action='store_true', dest="verbose", default=False, help="")
+post_parser.add_argument("-h", action="store", dest="headers", default=[], help="server port")
+group = post_parser.add_mutually_exclusive_group(required=False)
+group.add_argument("-d", action="store", dest="inline", default="", help="")
+group.add_argument("-f", action="store", dest="file", default="", help="")
+
 args = parser.parse_args()
-run_client(args.host, args.port)
+run_client(args)
