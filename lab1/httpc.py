@@ -59,7 +59,7 @@ def build_verbose(args, response):
     #return response
 
     if args.verbose == True:
-        return response.split("\r\n\r\n")[1]
+        return response.split("\r\n\r\n", 1)[1]
     else:
         return response
 
