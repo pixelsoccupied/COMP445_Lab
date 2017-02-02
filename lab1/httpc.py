@@ -1,5 +1,6 @@
 #Example Usage
 #python httpc.py get -u 'http://httpbin.org/get?course=networking&assignment=1%27'
+#python httpc.py get -hd Accept:application/json -v -u 'http://httpbin.org/get?course=networking&assignment=1%27'
 
 from socket import *
 import argparse
@@ -21,21 +22,23 @@ def run_client(args):
     else:
         print "Method was not recognized"
         return None
-
     conn = socket(AF_INET, SOCK_STREAM)
     try:
         conn.connect((args.url.netloc, 80))
+        print request_string
         conn.send(request_string)
         response = conn.recv(1024)
-        print 'From Server:', response
+        response = build_verbose(args, response)
+        print "** Server Response **"
+        print response
     finally:
         conn.close()
 
 def build_get(args):
-    query_params = ""
+    query_params = "/"
     if not args.url.query == "":
         query_params = "?" + args.url.query
-        request_string = "GET " + args.url.path + query_params + " HTTP/1.0" + build_headers(args) + "\n\n"
+    request_string = "GET " + args.url.path + query_params + " HTTP/1.0" + build_headers(args) + "\n\n"
     return request_string
 
 def build_post(args):
@@ -51,10 +54,17 @@ def build_headers(args):
                 header_string = header_string + "\n" + split_head[0] + ": " + split_head[1]
     return header_string
 
+def build_verbose(args, response):
+    #print repr(response)
+    #return response
 
+    if args.verbose == True:
+        return response.split("\r\n\r\n")[1]
+    else:
+        return response
 
 def validate_url(url):
-    if url.netloc == "" or url.path == "":
+    if url.netloc == "":
         return False
     else:
         return True
