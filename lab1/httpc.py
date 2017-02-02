@@ -5,6 +5,7 @@ from socket import *
 import argparse
 import sys
 from urlparse import urlparse
+import json
 
 def run_client(args):
     print args
@@ -21,8 +22,6 @@ def run_client(args):
         print "Method was not recognized"
         return None
 
-    print request_string
-    #return None
     conn = socket(AF_INET, SOCK_STREAM)
     try:
         conn.connect((args.url.netloc, 80))
@@ -36,12 +35,23 @@ def build_get(args):
     query_params = ""
     if not args.url.query == "":
         query_params = "?" + args.url.query
-        request_string = "GET " + args.url.path + query_params + " HTTP/1.0\nHOST: " + args.url.netloc + "\n\n"
+        request_string = "GET " + args.url.path + query_params + " HTTP/1.0" + build_headers(args) + "\n\n"
     return request_string
 
 def build_post(args):
-    request_string = "POST " + args.url.path + " HTTP/1.0\nHOST: " + args.url.netloc + "\n\n"
+    request_string = "POST " + args.url.path + " HTTP/1.0" + build_headers(args) + "\n\n"
     return request_string
+
+def build_headers(args):
+    header_string = "\nHOST: " + args.url.netloc
+    if len(args.headers) > 0:
+        for head in args.headers:
+            split_head = head.split(":")
+            if len(split_head) == 2:
+                header_string = header_string + "\n" + split_head[0] + ": " + split_head[1]
+    return header_string
+
+
 
 def validate_url(url):
     if url.netloc == "" or url.path == "":
@@ -49,6 +59,7 @@ def validate_url(url):
     else:
         return True
 
+#Build the argument parser
 parser = argparse.ArgumentParser(description="httpc is a curl-like application but supports HTTP protocol only.")
 subparsers = parser.add_subparsers(help='commands')
 get_parser = subparsers.add_parser('get', help='Executes a HTTP GET request and prints the response.')
@@ -61,7 +72,7 @@ post_parser = subparsers.add_parser('post', help='Executes a HTTP POST request a
 post_parser.add_argument("-v", action='store_true', dest="verbose", default=False, help="Prints the detail of the response such as protocol, status, and headers.")
 post_parser.add_argument("-hd", action="store", nargs='*', dest="headers", default=[], help="Associates headers to HTTP Request with the format 'key:value'.")
 group = post_parser.add_mutually_exclusive_group(required=False)
-group.add_argument("-d", action="store", dest="data", default="", help="Associates an inline data to the body HTTP POST.")
+group.add_argument("-d", action="store", dest="data", default="", type=json.loads, help="Associates an inline data to the body HTTP POST.")
 group.add_argument("-f", action="store", dest="file", default="", help="Associates the content of a file to the body HTTP.")
 post_parser.add_argument("-u", action="store", dest="url", type=urlparse, required=True, help="Requested URL")
 post_parser.set_defaults(which='post')
