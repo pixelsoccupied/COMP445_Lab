@@ -1,6 +1,9 @@
+#!/usr/bin/python
 #Example Usage
 #python httpc.py get -u 'http://httpbin.org/get?course=networking&assignment=1%27'
 #python httpc.py get -hd Accept:application/json -v -u 'http://httpbin.org/get?course=networking&assignment=1%27'
+#httpc.py post -hd Accept:application/json -v -f 'test.txt' -u 'http://httpbin.org/post'
+#httpc.py post -hd Accept:application/json -v -d '{"test":"test"}' -u 'http://httpbin.org/post' -o 'output.txt'
 
 from socket import *
 import argparse
