@@ -29,6 +29,10 @@ def run_client(args):
         print request_string
         conn.send(request_string)
         response = conn.recv(1024)
+        if args.output_file:
+            o = open(args.output_file, 'w')
+            o.write(response.split("\r\n\r\n", 1)[1])
+            o.close()
         response = build_verbose(args, response)
         print "** Server Response **"
         print response
@@ -45,14 +49,10 @@ def build_get(args):
 def build_post(args):
     body = ""
     if args.data:
-        print json.dumps(json.dumps(args.data))
         body = json.dumps(args.data)
     if args.file:
-        print "file"
         with open(args.file, 'r') as f:
-            #print json.dumps(f.read())
             body = f.read()
-    print body
     args.headers.extend(["Content-Type:application/json", "Content-Length: "+str(len(body))])
     request_string = "POST " + args.url.path + " HTTP/1.0" + build_headers(args) + "\n\n"+body
 
@@ -98,6 +98,7 @@ group = post_parser.add_mutually_exclusive_group(required=False)
 group.add_argument("-f", action="store", dest="file", default="", help="Associates the content of a file to the body HTTP.")
 group.add_argument("-d", action="store", dest="data", type=json.loads, default='{}', help="Associates an inline data to the body HTTP POST.")
 post_parser.add_argument("-u", action="store", dest="url", type=urlparse, required=True, help="Requested URL")
+post_parser.add_argument("-o", action="store", dest="output_file", default="", help="Output the body to a file")
 post_parser.set_defaults(which='post')
 
 args = parser.parse_args()
