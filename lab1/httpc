@@ -13,7 +13,7 @@ import json
 from urllib import urlencode
 
 def run_client(args):
-    print args
+    #print args
     request_string = ""
 
     if not validate_url(args.url):
@@ -29,7 +29,7 @@ def run_client(args):
     conn = socket(AF_INET, SOCK_STREAM)
     try:
         conn.connect((args.url.netloc, 80))
-        print request_string
+        #print request_string
         conn.send(request_string)
         response = conn.recv(1024)
         if args.output_file:
@@ -92,6 +92,7 @@ get_parser = subparsers.add_parser('get', help='Executes a HTTP GET request and 
 get_parser.add_argument("-v", action='store_true', dest="verbose", default=False, help="Prints the detail of the response such as protocol, status, and headers.")
 get_parser.add_argument("-hd", action="store", nargs='*', dest="headers", default=[], help="Associates headers to HTTP Request with the format 'key:value'.")
 get_parser.add_argument("-u", action="store", dest="url", type=urlparse, required=True, help="Requested URL")
+get_parser.add_argument("-o", action="store", dest="output_file", default="", help="Output the body to a file", required=False)
 get_parser.set_defaults(which='get')
 
 post_parser = subparsers.add_parser('post', help='Executes a HTTP POST request and prints the response.')
@@ -101,7 +102,7 @@ group = post_parser.add_mutually_exclusive_group(required=False)
 group.add_argument("-f", action="store", dest="file", default="", help="Associates the content of a file to the body HTTP.")
 group.add_argument("-d", action="store", dest="data", type=json.loads, default='{}', help="Associates an inline data to the body HTTP POST.")
 post_parser.add_argument("-u", action="store", dest="url", type=urlparse, required=True, help="Requested URL")
-post_parser.add_argument("-o", action="store", dest="output_file", default="", help="Output the body to a file")
+post_parser.add_argument("-o", action="store", dest="output_file", default="", help="Output the body to a file", required=False)
 post_parser.set_defaults(which='post')
 
 args = parser.parse_args()
