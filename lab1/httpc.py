@@ -7,6 +7,7 @@ import argparse
 import sys
 from urlparse import urlparse
 import json
+from urllib import urlencode
 
 def run_client(args):
     print args
@@ -42,7 +43,19 @@ def build_get(args):
     return request_string
 
 def build_post(args):
-    request_string = "POST " + args.url.path + " HTTP/1.0" + build_headers(args) + "\n\n"
+    body = ""
+    if args.data:
+        print json.dumps(json.dumps(args.data))
+        body = json.dumps(args.data)
+    if args.file:
+        print "file"
+        with open(args.file, 'r') as f:
+            #print json.dumps(f.read())
+            body = f.read()
+    print body
+    args.headers.extend(["Content-Type:application/json", "Content-Length: "+str(len(body))])
+    request_string = "POST " + args.url.path + " HTTP/1.0" + build_headers(args) + "\n\n"+body
+
     return request_string
 
 def build_headers(args):
@@ -58,7 +71,7 @@ def build_verbose(args, response):
     #print repr(response)
     #return response
 
-    if args.verbose == True:
+    if args.verbose == False:
         return response.split("\r\n\r\n", 1)[1]
     else:
         return response
@@ -82,10 +95,12 @@ post_parser = subparsers.add_parser('post', help='Executes a HTTP POST request a
 post_parser.add_argument("-v", action='store_true', dest="verbose", default=False, help="Prints the detail of the response such as protocol, status, and headers.")
 post_parser.add_argument("-hd", action="store", nargs='*', dest="headers", default=[], help="Associates headers to HTTP Request with the format 'key:value'.")
 group = post_parser.add_mutually_exclusive_group(required=False)
-group.add_argument("-d", action="store", dest="data", default="", type=json.loads, help="Associates an inline data to the body HTTP POST.")
 group.add_argument("-f", action="store", dest="file", default="", help="Associates the content of a file to the body HTTP.")
+group.add_argument("-d", action="store", dest="data", type=json.loads, default='{}', help="Associates an inline data to the body HTTP POST.")
 post_parser.add_argument("-u", action="store", dest="url", type=urlparse, required=True, help="Requested URL")
 post_parser.set_defaults(which='post')
 
 args = parser.parse_args()
 run_client(args)
+
+#https://pymotw.com/2/argparse/
