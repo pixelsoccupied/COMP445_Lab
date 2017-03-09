@@ -3,22 +3,23 @@ COMP 445 Lab 1
 ### Setup
 
 ##### Basic setup
+```shell
 $ python httpc (get|post) [-v] (-hd "k:v")* [-d inline-data] [-f file] -u URL
+```
 
 ##### Without extension and python prefix
+```shell
 $ chmod +x httpc
-
 $ ./httpc (get|post) [-v] (-hd "k:v")* [-d inline-data] [-f file] -u URL
+```
 
 ##### Using as a command
+```shell
 $ chmod +x httpc
-
 $ cd /usr/bin
-
 $ [sudo] ln -s path/to/httpc .
-
 $ httpc (get|post) [-v] (-hd "k:v")* [-d inline-data] [-f file] -u URL
-
+```
 
 ### Help & Examples
 
