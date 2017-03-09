@@ -29,22 +29,48 @@ def handle_client(conn, addr):
             data = conn.recv(1024)
             if not data:
                 break
-            headers = get_headers(data)
-            method_tuple = get_method(headers)
-            print method_tuple
+            request_split = split_request(data)
+            method_tuple = get_method(request_split[0])
+            # print method_tuple
             if method_tuple[0] == "GET":
                 print data
-                send_get_data(headers, conn, method_tuple[1])
-                break;
+                send_get_data(request_split[0], conn, method_tuple[1])
+                break
+            elif method_tuple[0] == "POST":
+                print data
+                send_post_data(request_split, conn, method_tuple[1])
+                break
+            else:
+                body = make_return_header(None, 0, "")
+                conn.sendall(body)
+                break
 
     finally:
         conn.close()
 
-def get_headers(data):
-    return data.split("\r\n")[0]
+def split_request(data):
+    return data.split("\r\n\r\n")
 
 def get_method(headers):
     return headers.split()[:2]
+
+def send_post_data(request, conn, path):
+    path = path.replace("/","")
+    print path
+    print request
+    if len(path) > 0 and len(request) == 2:
+        try:
+            filename = glob.glob(os.path.join(dir_path, path + '.*'))[0]
+            print filename
+            with open(filename, 'w') as myfile:
+                myfile.write(request[1])
+                data = make_return_header(True, 0, "")
+        except IndexError, e:
+            print e
+            data = make_return_header(False, 0, "")
+    else:
+        data = make_return_header(False, 0, "")
+    conn.sendall(data)
 
 def send_get_data(headers, conn, path):
     path = path.replace("/","")
@@ -56,22 +82,24 @@ def send_get_data(headers, conn, path):
                 file_data = myfile.read()
                 file_length = len(file_data)
                 data = make_return_header(True, file_length, "text/plain")
-                data += file_data + "\r\n\r\n"
+                data += file_data + "\r\n"
         except IndexError, e:
             data = make_return_header(False, 0, "")
     else:
         file_data = json.dumps(os.listdir(dir_path))
         file_length = len(file_data)
         data = make_return_header(True, file_length, "text/plain")
-        data += file_data + "\r\n\r\n"
+        data += file_data + "\r\n"
     conn.sendall(data)
 
 def make_return_header(ok, length, content_type):
     header_string = ""
     if ok is True:
         header_string += "HTTP/1.0 200 OK\r\n"
-    else:
+    elif ok is False:
         header_string += "HTTP/1.0 404 Not Found\r\n"
+    else:
+        header_string += "HTTP/1.0 400 Bad Request\r\n"
 
     current_date = time.strftime("%a, %d %b %Y %H:%M:%S", time.localtime())
     header_string += "Date: " + current_date + "\r\n"
