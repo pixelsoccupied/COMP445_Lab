@@ -28,7 +28,7 @@ def run_client(args):
         return None
     conn = socket(AF_INET, SOCK_STREAM)
     try:
-        conn.connect((args.url.netloc, 80))
+        conn.connect((args.url.netloc, args.port))
         #print request_string
         conn.send(request_string)
         response = conn.recv(1024)
@@ -36,6 +36,7 @@ def run_client(args):
             o = open(args.output_file, 'w')
             o.write(response.split("\r\n\r\n", 1)[1])
             o.close()
+        print response
         response = build_verbose(args, response)
         print "** Server Response **"
         print response
@@ -43,10 +44,10 @@ def run_client(args):
         conn.close()
 
 def build_get(args):
-    query_params = "/"
+    query_params = ""
     if not args.url.query == "":
         query_params = "?" + args.url.query
-    request_string = "GET " + args.url.path + query_params + " HTTP/1.0" + build_headers(args) + "\n\n"
+    request_string = "GET " + args.url.path + query_params + " HTTP/1.0" + build_headers(args) + "\r\n\r\n"
     return request_string
 
 def build_post(args):
@@ -57,7 +58,7 @@ def build_post(args):
         with open(args.file, 'r') as f:
             body = f.read()
     args.headers.extend(["Content-Type:application/json", "Content-Length: "+str(len(body))])
-    request_string = "POST " + args.url.path + " HTTP/1.0" + build_headers(args) + "\n\n"+body
+    request_string = "POST " + args.url.path + " HTTP/1.0" + build_headers(args) + "\r\n\r\n"+body
 
     return request_string
 
@@ -67,7 +68,7 @@ def build_headers(args):
         for head in args.headers:
             split_head = head.split(":")
             if len(split_head) == 2:
-                header_string = header_string + "\n" + split_head[0] + ": " + split_head[1]
+                header_string = header_string + "\r\n" + split_head[0] + ": " + split_head[1]
     return header_string
 
 def build_verbose(args, response):
@@ -89,6 +90,7 @@ def validate_url(url):
 parser = argparse.ArgumentParser(description="httpc is a curl-like application but supports HTTP protocol only.")
 subparsers = parser.add_subparsers(help='commands')
 get_parser = subparsers.add_parser('get', help='Executes a HTTP GET request and prints the response.')
+get_parser.add_argument("-p", action='store', dest="port", type=int, default=8080, help="Set the server port")
 get_parser.add_argument("-v", action='store_true', dest="verbose", default=False, help="Prints the detail of the response such as protocol, status, and headers.")
 get_parser.add_argument("-hd", action="store", nargs='*', dest="headers", default=[], help="Associates headers to HTTP Request with the format 'key:value'.")
 get_parser.add_argument("-u", action="store", dest="url", type=urlparse, required=True, help="Requested URL")
@@ -96,6 +98,7 @@ get_parser.add_argument("-o", action="store", dest="output_file", default="", he
 get_parser.set_defaults(which='get')
 
 post_parser = subparsers.add_parser('post', help='Executes a HTTP POST request and prints the response.')
+post_parser.add_argument("-p", action='store', dest="port", type=int, default=8080, help="Set the server port")
 post_parser.add_argument("-v", action='store_true', dest="verbose", default=False, help="Prints the detail of the response such as protocol, status, and headers.")
 post_parser.add_argument("-hd", action="store", nargs='*', dest="headers", default=[], help="Associates headers to HTTP Request with the format 'key:value'.")
 group = post_parser.add_mutually_exclusive_group(required=False)

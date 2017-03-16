@@ -1,3 +1,5 @@
+#!/usr/bin/python
+
 import socket
 import threading
 import argparse
@@ -5,25 +7,26 @@ import os
 import json
 import glob
 import time
+import re
 
-dir_path = os.path.dirname(os.path.realpath(__file__)) + "/data"
-
-def run_server(host, port):
+def run_server(host, opt):
     listener = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     listener.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
     try:
-        listener.bind((host, port))
+        listener.bind((host, opt.port))
         listener.listen(5)
-        print('Echo server is listening at', port)
+        if args.debugging:
+            print('Echo server is listening at', opt.port)
         while True:
             conn, addr = listener.accept()
-            threading.Thread(target=handle_client, args=(conn, addr)).start()
+            threading.Thread(target=handle_client, args=(conn, addr, opt)).start()
     finally:
         listener.close()
 
 
-def handle_client(conn, addr):
-    print 'New client from', addr
+def handle_client(conn, addr, opt):
+    if opt.debugging:
+        print '\n\nNew client from', addr
     try:
         while True:
             data = conn.recv(1024)
@@ -31,14 +34,27 @@ def handle_client(conn, addr):
                 break
             request_split = split_request(data)
             method_tuple = get_method(request_split[0])
+            args.is_directory = method_tuple[1].endswith("/")
+
+            if opt.debugging:
+                print "Is directory? ", opt.is_directory
+
+            path = re.search(r"\.{0,1}\w+\/*(\.{0,1}\w+\/*)*", method_tuple[1])
+            if path is None:
+                path = ""
+            else:
+                path = path.group(0)
+
             # print method_tuple
             if method_tuple[0] == "GET":
-                print data
-                send_get_data(request_split[0], conn, method_tuple[1])
+                if opt.debugging:
+                    print "Data ", data
+                send_get_data(request_split[0], conn, path, opt)
                 break
             elif method_tuple[0] == "POST":
-                print data
-                send_post_data(request_split, conn, method_tuple[1])
+                if opt.debugging:
+                    print "Data ", data
+                send_post_data(request_split, conn, path, opt)
                 break
             else:
                 body = make_return_header(None, 0, "")
@@ -54,39 +70,49 @@ def split_request(data):
 def get_method(headers):
     return headers.split()[:2]
 
-def send_post_data(request, conn, path):
-    path = path.replace("/","")
-    print path
-    print request
-    if len(path) > 0 and len(request) == 2:
+def send_post_data(request, conn, path, opt):
+
+    if opt.debugging:
+        print "Debug Path ", path
+
+    if not opt.is_directory and len(request) == 2:
         try:
-            filename = glob.glob(os.path.join(dir_path, path + '.*'))[0]
-            print filename
+            filename = glob.glob(os.path.join(opt.directory, path + '.*'))[0]
+            if opt.debugging:
+                print "Filename ", filename
             with open(filename, 'w') as myfile:
                 myfile.write(request[1])
                 data = make_return_header(True, 0, "")
         except IndexError, e:
-            print e
+            if opt.debugging:
+                print "Error, ", str(e)
             data = make_return_header(False, 0, "")
     else:
         data = make_return_header(False, 0, "")
     conn.sendall(data)
 
-def send_get_data(headers, conn, path):
-    path = path.replace("/","")
-    if len(path) > 0:
+def send_get_data(headers, conn, path, opt):
+    if opt.debugging:
+        print "Debug Path ", path
+
+    if not opt.is_directory:
         try:
-            filename = glob.glob(os.path.join(dir_path, path + '.*'))[0]
-            print filename
+            filename = glob.glob(os.path.join(opt.directory, path + '.*'))[0]
+            if opt.debugging:
+                print "Filename ", filename
             with open(filename, 'r') as myfile:
                 file_data = myfile.read()
                 file_length = len(file_data)
                 data = make_return_header(True, file_length, "text/plain")
                 data += file_data + "\r\n"
-        except IndexError, e:
+        except (IndexError, OSError), e:
+            if opt.debugging:
+                print "Error ",str(e)
             data = make_return_header(False, 0, "")
     else:
-        file_data = json.dumps(os.listdir(dir_path))
+        folder_path = os.path.join(opt.directory, path)
+        file_data = "Folder path: " + folder_path + "\n"
+        file_data += json.dumps(os.listdir(folder_path))
         file_length = len(file_data)
         data = make_return_header(True, file_length, "text/plain")
         data += file_data + "\r\n"
@@ -113,6 +139,11 @@ def make_return_header(ok, length, content_type):
 
 # Usage python echoserver.py [--port port-number]
 parser = argparse.ArgumentParser()
-parser.add_argument("--port", help="echo server port", type=int, default=8006)
+parser.add_argument("-p", action="store", dest="port", help="Set server port", type=int, default=8080)
+parser.add_argument("-v", action="store_true", dest="debugging", help="Echo debugging mesages", default=False)
+parser.add_argument("-d", action="store", dest="directory", help="Set directory path", default='/')
 args = parser.parse_args()
-run_server('', args.port)
+
+args.is_directory = False
+
+run_server('', args)

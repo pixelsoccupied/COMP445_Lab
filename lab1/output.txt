@@ -1,17 +1,14 @@
 {
   "args": {}, 
-  "data": "{\"test\": \"test\"}", 
+  "data": "", 
   "files": {}, 
   "form": {}, 
   "headers": {
-    "Accept": "application/json", 
-    "Content-Length": "16", 
+    "Content-Length": "0", 
     "Content-Type": "application/json", 
     "Host": "httpbin.org"
   }, 
-  "json": {
-    "test": "test"
-  }, 
+  "json": null, 
   "origin": "144.172.191.21", 
   "url": "http://httpbin.org/post"
 }
