@@ -3,14 +3,15 @@
 from receiver import Receiver
 from sender import Sender
 import argparse
-from multiprocessing import Process
+from threading import Thread
 
 def start(args):
-    #How do I get to run both sender and receiver at the same time ?
-    #Essentially, every client has a sender and receiver that is shared on the same terminal.. How?
-    Process(target = Receiver('', args.port))
-    Process(target = Sender(args.address, args.port))
-
+    receiver = Receiver('', args.port)
+    sender = Sender(args.address, args.port)
+    receiver.start()
+    sender.start()
+    receiver.join()
+    sender.join()
 
 parser = argparse.ArgumentParser()
 parser.add_argument("-p", action="store", dest="port", help="Set server port", type=int, default=8080)
