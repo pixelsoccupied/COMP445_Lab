@@ -16,19 +16,26 @@ class Sender(Thread):
         clientSocket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
         clientSocket.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
         username = raw_input('Enter your name: ')
+        self.send_message(clientSocket, "", username, "JOIN")
 
         while self.thread_on == True:
             message = raw_input('')
-            if message == "BYE":
+            if message == "/leave":
                 self.thread_on = False
-            modifiedMessage = self.build_message(username, message)
-            clientSocket.sendto(modifiedMessage,(self.address, self.port))
+                self.send_message(clientSocket, message, username, "LEAVE")
+            else:
+                self.send_message(clientSocket, message, username, "TALK")
             # serverMessage, serverAddress = clientSocket.recvfrom(2048)
             # print serverMessage
-        print "Closing Sender"
+        # print "Closing Sender"
         clientSocket.close()
 
-    def build_message(self, username, message):
+    def send_message(self, clientSocket, message, username, command):
+        modifiedMessage = self.build_message(username, message, command)
+        clientSocket.sendto(modifiedMessage,(self.address, self.port))
+
+    def build_message(self, username, message, command):
         user_message = "user:" + username + "\n"
+        user_message += "command:" + command + "\n"
         user_message += "message:" + message + "\n\n"
         return user_message

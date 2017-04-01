@@ -14,23 +14,38 @@ class Receiver(Thread):
         # print "Receiver using: " + self.address + ":" + str(self.port) + "\n"
         receiverSocket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         receiverSocket.bind((self.address, self.port))
+        self.socket_address = socket.gethostbyname(socket.gethostname())
+        # print self.socket_address
 
         while self.thread_on == True:
             message, clientAddress = receiverSocket.recvfrom(2048)
+            # print clientAddress
             message_content = self.split_message(message)
             modifiedMessage = self.parse_message(message_content)
-            if message_content[1] == "BYE":
-                self.thread_on = False
-            else:
+
+            if modifiedMessage is not None:
+                if message_content[1] == "LEAVE" and clientAddress[0] == self.socket_address:
+                    self.thread_on = False
                 print modifiedMessage
-        print "Closing Receiver"
-            # receiverSocket.sendto(modifiedMessage, clientAddress);
+
+        # print "Closing Receiver"
+
     def split_message(self, message):
+        # print message
         message_split = message.split("\n")
         user_name = message_split[0].split(":")[1]
-        message_content = message_split[1].split(":")[1]
-        return (user_name, message_content)
+        command = message_split[1].split(":")[1]
+        message_content = message_split[2].split(":")[1]
+        return (user_name, command, message_content)
 
     def parse_message(self, message_content):
         now = datetime.datetime.now()
-        return str(now) + " [" + message_content[0] + "]: " + message_content[1]
+        command = message_content[1]
+        if command == "JOIN":
+            return str(now) + " " + message_content[0] + " joined!"
+        elif command == "TALK":
+            return str(now) + " [" + message_content[0] + "]: " + message_content[2]
+        elif command == "LEAVE":
+            return str(now) + " " + message_content[0] + " leaved!"
+        else:
+            return None
