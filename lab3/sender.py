@@ -2,6 +2,7 @@
 import socket
 from threading import Thread
 import re
+import datetime
 
 class Sender(Thread):
 
@@ -10,6 +11,7 @@ class Sender(Thread):
         self.port = port
         self.address = address
         self.thread_on = True
+        self.channel = "general"
 
     def run(self):
         clientSocket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
@@ -28,11 +30,14 @@ class Sender(Thread):
                 self.send_message(clientSocket, "", username, "QUIT")
             elif message == "/who":
                 self.send_message(clientSocket, "", username, "WHO")
-            elif re.match(r'^\/private\s.*', message) is not None:
+            elif re.match(r'^\/private\s.*$', message) is not None:
                 user_to_send = message.replace("/private ", "").strip()
                 message_to_send = raw_input('Private message to send to ' + user_to_send + ": ")
                 user_string = username + ":" + user_to_send
                 self.send_message(clientSocket, message_to_send, user_string, "PRIVATE-TALK")
+            elif re.match(r'^\/channel\s.*$', message) is not None:
+                self.channel = message.replace("/channel ", "").strip()
+                print str(datetime.datetime.now()) + " Switched to channel " + self.channel
             else:
                 self.send_message(clientSocket, message, username, "TALK")
         clientSocket.close()
@@ -46,7 +51,8 @@ class Sender(Thread):
         clientSocket.sendto(modifiedMessage,(messageaddress, self.port))
 
     def build_message(self, username, message, command):
-        user_message = "user:" + username
-        user_message += "\ncommand:" + command + "\n"
-        user_message += "message:" + message + "\n\n"
+        user_message = "user:" + username + "\n"
+        user_message += "command:" + command + "\n"
+        user_message += "message:" + message + "\n"
+        user_message += "channel:" + self.channel + "\n\n"
         return user_message

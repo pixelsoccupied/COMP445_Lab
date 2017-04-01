@@ -10,6 +10,7 @@ class Receiver(Thread):
         self.port = port
         self.thread_on = True
         self.users = []
+        self.channel = "general"
 
     def run(self):
         receiverSocket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
@@ -27,11 +28,13 @@ class Receiver(Thread):
                 self.thread_on = False
 
     def split_message(self, message):
+        # print message
         message_split = message.split("\n")
         user_name = message_split[0].split(":")[1:]
         command = message_split[1].split(":")[1]
         message_content = message_split[2].split(":")[1]
-        return (user_name, command, message_content)
+        channel = message_split[3].split(":")[1]
+        return (user_name, command, message_content, channel)
 
     def parse_message(self, receiverSocket, message_content, ip_address):
         now = datetime.datetime.now()
@@ -39,7 +42,11 @@ class Receiver(Thread):
         if command == "JOIN":
             return str(now) + " " + message_content[0][0] + " joined!"
         elif command == "TALK":
-            return str(now) + " [" + message_content[0][0] + "]: " + message_content[2]
+            if ip_address[0] == self.socket_address:
+                self.channel = message_content[3]
+            elif self.channel != message_content[3]:
+                return None
+            return str(now) + " [" + message_content[0][0] + " #" + self.channel + "]: " + message_content[2]
         elif command == "LEAVE":
             self.remove_from_users(ip_address)
             return str(now) + " " + message_content[0][0] + " leaved!"
@@ -78,5 +85,6 @@ class Receiver(Thread):
     def build_message(self, username, message, command):
         user_message = "user:" + username + "\n"
         user_message += "command:" + command + "\n"
-        user_message += "message:" + message + "\n\n"
+        user_message += "message:" + message + "\n"
+        user_message += "channel" + self.channel + "\n\n"
         return user_message
