@@ -9,6 +9,7 @@ class Receiver(Thread):
         self.address = address
         self.port = port
         self.thread_on = True
+        self.users = []
 
     def run(self):
         # print "Receiver using: " + self.address + ":" + str(self.port) + "\n"
@@ -24,7 +25,7 @@ class Receiver(Thread):
             modifiedMessage = self.parse_message(message_content)
 
             if modifiedMessage is not None:
-                if message_content[1] == "LEAVE" and clientAddress[0] == self.socket_address:
+                if message_content[1] == "QUIT":
                     self.thread_on = False
                 print modifiedMessage
 
@@ -42,10 +43,14 @@ class Receiver(Thread):
         now = datetime.datetime.now()
         command = message_content[1]
         if command == "JOIN":
+            self.users.append(message_content[0])
             return str(now) + " " + message_content[0] + " joined!"
         elif command == "TALK":
             return str(now) + " [" + message_content[0] + "]: " + message_content[2]
         elif command == "LEAVE":
+            self.users.remove(message_content[0])
             return str(now) + " " + message_content[0] + " leaved!"
+        elif command == "WHO":
+            return str(now) + " Connected users: " + str(self.users)
         else:
             return None

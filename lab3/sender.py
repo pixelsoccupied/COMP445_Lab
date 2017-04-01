@@ -22,7 +22,10 @@ class Sender(Thread):
             message = raw_input('')
             if message == "/leave":
                 self.thread_on = False
-                self.send_message(clientSocket, message, username, "LEAVE")
+                self.send_message(clientSocket, "", username, "LEAVE")
+                self.send_message(clientSocket, "", username, "QUIT")
+            elif message == "/who":
+                self.send_message(clientSocket, "", username, "WHO")
             else:
                 self.send_message(clientSocket, message, username, "TALK")
             # serverMessage, serverAddress = clientSocket.recvfrom(2048)
@@ -31,8 +34,12 @@ class Sender(Thread):
         clientSocket.close()
 
     def send_message(self, clientSocket, message, username, command):
+        messageaddress = self.address
+        if command == "WHO" or command == "QUIT":
+            messageaddress = "127.0.0.1"
+
         modifiedMessage = self.build_message(username, message, command)
-        clientSocket.sendto(modifiedMessage,(self.address, self.port))
+        clientSocket.sendto(modifiedMessage,(messageaddress, self.port))
 
     def build_message(self, username, message, command):
         user_message = "user:" + username + "\n"
