@@ -20,15 +20,16 @@ class Receiver(Thread):
 
         while self.thread_on == True:
             message, clientAddress = receiverSocket.recvfrom(2048)
+            # print message
             # print clientAddress
             message_content = self.split_message(message)
             modifiedMessage = self.parse_message(message_content)
 
             if modifiedMessage is not None:
-                if message_content[1] == "QUIT":
-                    self.thread_on = False
+                # print message_content[1]
                 print modifiedMessage
-
+            elif message_content[1] == "QUIT":
+                self.thread_on = False
         # print "Closing Receiver"
 
     def split_message(self, message):
@@ -43,14 +44,21 @@ class Receiver(Thread):
         now = datetime.datetime.now()
         command = message_content[1]
         if command == "JOIN":
-            self.users.append(message_content[0])
             return str(now) + " " + message_content[0] + " joined!"
         elif command == "TALK":
             return str(now) + " [" + message_content[0] + "]: " + message_content[2]
         elif command == "LEAVE":
-            self.users.remove(message_content[0])
-            return str(now) + " " + message_content[0] + " leaved!"
+            try:
+                self.users.remove(message_content[0])
+            except ValueError, e:
+                pass
+            finally:
+                return str(now) + " " + message_content[0] + " leaved!"
         elif command == "WHO":
             return str(now) + " Connected users: " + str(self.users)
+        elif command == "PING":
+            # print "Adding: " + message_content[0]
+            self.users.append(message_content[0])
+            return None
         else:
             return None

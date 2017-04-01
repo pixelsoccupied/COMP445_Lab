@@ -17,6 +17,7 @@ class Sender(Thread):
         clientSocket.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
         username = raw_input('Enter your name: ')
         self.send_message(clientSocket, "", username, "JOIN")
+        self.send_message(clientSocket, "", username, "PING")
 
         while self.thread_on == True:
             message = raw_input('')
