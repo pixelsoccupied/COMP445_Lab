@@ -6,7 +6,7 @@ import argparse
 from threading import Thread
 
 def start(args):
-    receiver = Receiver('', args.port)
+    receiver = Receiver('', args.address, args.port)
     sender = Sender(args.address, args.port)
     receiver.start()
     sender.start()
